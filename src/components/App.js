@@ -8,6 +8,13 @@ import EditAvatarPopup from './EditAvatarPopup';
 import ImagePopup from './ImagePopup';
 import { CurrentUserContext } from '../contexts/CurrentUserContext';
 import api from "../utils/api";
+import { register, authorize, getUserData } from "../utils/auth";
+
+import Login from './Login';
+import Register from './Register';
+import ProtectedRoute from './ProtectedRoute';
+import InfoTooltip from './InfoTooltip';
+import { Route, Switch, useHistory, useLocation } from 'react-router-dom';
 
 function App() {
     const [isEditAvatarPopupOpen, setEditAvatarPopup] = React.useState(false);
@@ -16,6 +23,13 @@ function App() {
     const [selectedCard, setSelectedCard] = React.useState(null);
     const [currentUser, setCurrentUser] = React.useState({});
     const [cards, setCards] = React.useState([]);
+    const [loggedIn, setLoggedIn] = React.useState(false);
+    const [signedUp, setSignedUp] = React.useState(false);
+    const [email, setEmail] = React.useState('');
+    const [isInfoToolTipOpen, setIsInfoToolTipOpen] = React.useState(false);
+
+    const history = useHistory();
+    const location = useLocation();
 
     React.useEffect(() => {
         api.getProfileInfo()
@@ -31,6 +45,11 @@ function App() {
             })
             .catch((err) => console.log(err));
         },[]);
+
+    React.useEffect(() => {
+            tokenCheck();
+        },[]);
+    
 
     function handleEditAvatarClick() {
         setEditAvatarPopup(true);
@@ -53,6 +72,7 @@ function App() {
         setEditProfilePopup(false);
         setEditPlacePopup(false);
         setSelectedCard(null);
+        setIsInfoToolTipOpen(false);
     }
 
     function handleUpdateUser(user) {
@@ -100,25 +120,101 @@ function App() {
         .catch((err) => console.log(err));
     }
 
+    function handleRegister(email, password) {
+        register(email, password)
+            .then(res => {
+                if(res) {
+                    setSignedUp(true);
+                    setIsInfoToolTipOpen(true);
+                    history.push('/sign-in');
+                }
+               
+            })
+            .catch((err) => {
+                setSignedUp(false);
+                setIsInfoToolTipOpen(true);
+                console.log(err)
+            });
+    }
+
+    function handleLogin(email, password) {
+        authorize(email, password)
+            .then(data => {
+                if(data.token) {
+                    setEmail(email)
+                    localStorage.setItem('jwt', data.token);
+                    setLoggedIn(true);
+                    history.push('/');
+                }
+            })
+            .catch((err) => console.log(err));
+    }
+
+    function tokenCheck() {
+        const jwt = localStorage.getItem('jwt');
+        
+        if(jwt) {
+            getUserData(jwt)
+            .then(res => {
+                setEmail(res.data.email);
+                setLoggedIn(true);
+                history.push('/');
+            })
+        }
+    }
+
+    function onSignOut() {
+        localStorage.removeItem('jwt');
+        setLoggedIn(false);
+        history.push('/sign-in')
+    }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
         <div className="root">
             <div className="page">
-                <Header />
-                <Main onEditAvatar={handleEditAvatarClick}
-                onEditProfile={handleEditProfileClick}
-                onAddPlace={handleAddPlaceClick}
-                onCardClick={handleCardClick}
-                cards={cards}
-                onCardLike={handleCardLike}
-                onCardDelete={handleCardDelete}
-                />
+                <Header location={location} email={email} loggedIn={loggedIn} onSignOut={onSignOut}/>
+                <Switch>
+                    <ProtectedRoute
+                        exact path="/"
+                        loggedIn={loggedIn}
+                        component={Main}
+                        onEditAvatar={handleEditAvatarClick}
+                        onEditProfile={handleEditProfileClick}
+                        onAddPlace={handleAddPlaceClick}
+                        onCardClick={handleCardClick}
+                        cards={cards}
+                        onCardLike={handleCardLike}
+                        onCardDelete={handleCardDelete}
+                    />
+                    <Route path="/sign-up">
+                        <Register handleRegister={handleRegister} />                        
+                    </Route>
+                    <Route path="/sign-in">
+                        <Login handleLogin={handleLogin} />
+                    </Route> 
+                </Switch>
                 <Footer />
-                <EditAvatarPopup isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} onUpdateAvatar={handleUpdateAvatar}/>
-                <EditProfilePopup isOpen={isEditProfilePopupOpen} onClose={closeAllPopups} onUpdateUser={handleUpdateUser} />
-                <AddPlacePopup isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} onAddCard={handleAddCard} />
+                <EditAvatarPopup
+                    isOpen={isEditAvatarPopupOpen}
+                    onClose={closeAllPopups}
+                    onUpdateAvatar={handleUpdateAvatar}/>
+                <EditProfilePopup 
+                    isOpen={isEditProfilePopupOpen} 
+                    onClose={closeAllPopups} 
+                    onUpdateUser={handleUpdateUser} />
+                <AddPlacePopup 
+                    isOpen={isAddPlacePopupOpen} 
+                    onClose={closeAllPopups} 
+                    onAddCard={handleAddCard} />
                 {/* <PopupWithForm title="Вы уверены?" name="popup-delete" button="да" /> */}
-                <ImagePopup card={selectedCard} onClose={closeAllPopups}/>
+                <ImagePopup 
+                    card={selectedCard} 
+                    onClose={closeAllPopups}/>
+                <InfoTooltip 
+                    isOpen={isInfoToolTipOpen} 
+                    onClose={closeAllPopups}
+                    signedUp ={signedUp} />
             </div>    
         </div>
     </CurrentUserContext.Provider>
