@@ -25,7 +25,6 @@ function AddPlacePopup(props) {
           name: placeValue,
           link: placeLinkValue
         });
-        setPlaceValue('')
         setPlaceLinkValue('')
       }
 

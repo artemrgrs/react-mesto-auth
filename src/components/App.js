@@ -14,7 +14,7 @@ import Login from './Login';
 import Register from './Register';
 import ProtectedRoute from './ProtectedRoute';
 import InfoTooltip from './InfoTooltip';
-import { Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import { Route, Switch, useHistory } from 'react-router-dom';
 
 function App() {
     const [isEditAvatarPopupOpen, setEditAvatarPopup] = React.useState(false);
@@ -29,26 +29,20 @@ function App() {
     const [isInfoToolTipOpen, setIsInfoToolTipOpen] = React.useState(false);
 
     const history = useHistory();
-    const location = useLocation();
-
-    React.useEffect(() => {
-        api.getProfileInfo()
-        .then(res => {
-            setCurrentUser(res);
-          })
-          .catch((err) => console.log(err));
-        },[]);
-
-    React.useEffect(() => {
-        api.getInitialCards().then(res => {
-            setCards(res);
-            })
-            .catch((err) => console.log(err));
-        },[]);
 
     React.useEffect(() => {
             tokenCheck();
         },[]);
+    
+    React.useEffect(() => {
+        api.getAllNeededData()
+        .then(res => {
+            const [userData, cards] = res;
+            setCurrentUser(userData);
+            setCards(cards);
+        })
+        .catch((err) => console.log(err));
+    },[]);
     
 
     function handleEditAvatarClick() {
@@ -160,6 +154,7 @@ function App() {
                 setLoggedIn(true);
                 history.push('/');
             })
+            .catch((err) => console.log(err));
         }
     }
 
@@ -173,7 +168,7 @@ function App() {
     <CurrentUserContext.Provider value={currentUser}>
         <div className="root">
             <div className="page">
-                <Header location={location} email={email} loggedIn={loggedIn} onSignOut={onSignOut}/>
+                <Header email={email} loggedIn={loggedIn} onSignOut={onSignOut}/>
                 <Switch>
                     <ProtectedRoute
                         exact path="/"

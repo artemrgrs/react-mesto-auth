@@ -4,7 +4,6 @@ import authFailureLofo from '../images/auth-failure.png';
 
 function InfoTooltip(props) {
     return (
-        <>
         <div className={`popup ${props.isOpen ? 'popup_is-opened' : ' '}`}>
             <div className="popup__container popup__container_function_auth-status">
                 <button type="button" className="popup__close" onClick={props.onClose}></button>
@@ -13,7 +12,6 @@ function InfoTooltip(props) {
                     : 'Что-то пошло не так! Попробуйте ещё раз.' }</h2>
             </div>
         </div> 
-        </>
       );
   }
   
